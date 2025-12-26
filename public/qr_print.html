@@ -1,0 +1,454 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>QR Print Sheet</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 16px; }
+    h2 { margin: 18px 0 8px; }
+    .hint { color:#555; font-size:12px; margin-bottom:10px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .card {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      page-break-inside: avoid;
+    }
+    .card img { width: 140px; height: 140px; }
+    .label { font-weight: bold; margin-top: 6px; }
+    .small { font-size: 12px; color:#333; word-break: break-all; }
+    @media print {
+      body { margin: 0; }
+      .card { border: 1px solid #000; }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Tank QR Codes</h2>
+  <div class="hint">Scan these to identify tanks (example: TANK001).</div>
+  <div class="grid">
+    <div class="card">
+          <img src="qr/tanks/TANK001.png" alt="TANK001" />
+          <div class="label">TANK001</div>
+          <div class="small">TANK001</div>
+        </div><div class="card">
+          <img src="qr/tanks/TANK002.png" alt="TANK002" />
+          <div class="label">TANK002</div>
+          <div class="small">TANK002</div>
+        </div><div class="card">
+          <img src="qr/tanks/TANK003.png" alt="TANK003" />
+          <div class="label">TANK003</div>
+          <div class="small">TANK003</div>
+        </div><div class="card">
+          <img src="qr/tanks/TANK004.png" alt="TANK004" />
+          <div class="label">TANK004</div>
+          <div class="small">TANK004</div>
+        </div><div class="card">
+          <img src="qr/tanks/TANK005.png" alt="TANK005" />
+          <div class="label">TANK005</div>
+          <div class="small">TANK005</div>
+        </div><div class="card">
+          <img src="qr/tanks/TANK006.png" alt="TANK006" />
+          <div class="label">TANK006</div>
+          <div class="small">TANK006</div>
+        </div>
+  </div>
+
+  <h2 style="margin-top:22px;">Yard Slot QR Codes (96 slots)</h2>
+  <div class="hint">Scan these at placement to confirm slot location (format: Block-Bay-Row-Tier, e.g., A-1-3-2).</div>
+  <div class="grid">
+    <div class="card">
+          <img src="qr/slots/A-1-1-1.png" alt="A-1-1-1" />
+          <div class="label">A-1-1-1</div>
+          <div class="small">A-1-1-1</div>
+        </div><div class="card">
+          <img src="qr/slots/A-1-1-2.png" alt="A-1-1-2" />
+          <div class="label">A-1-1-2</div>
+          <div class="small">A-1-1-2</div>
+        </div><div class="card">
+          <img src="qr/slots/A-1-2-1.png" alt="A-1-2-1" />
+          <div class="label">A-1-2-1</div>
+          <div class="small">A-1-2-1</div>
+        </div><div class="card">
+          <img src="qr/slots/A-1-2-2.png" alt="A-1-2-2" />
+          <div class="label">A-1-2-2</div>
+          <div class="small">A-1-2-2</div>
+        </div><div class="card">
+          <img src="qr/slots/A-1-3-1.png" alt="A-1-3-1" />
+          <div class="label">A-1-3-1</div>
+          <div class="small">A-1-3-1</div>
+        </div><div class="card">
+          <img src="qr/slots/A-1-3-2.png" alt="A-1-3-2" />
+          <div class="label">A-1-3-2</div>
+          <div class="small">A-1-3-2</div>
+        </div><div class="card">
+          <img src="qr/slots/A-1-4-1.png" alt="A-1-4-1" />
+          <div class="label">A-1-4-1</div>
+          <div class="small">A-1-4-1</div>
+        </div><div class="card">
+          <img src="qr/slots/A-1-4-2.png" alt="A-1-4-2" />
+          <div class="label">A-1-4-2</div>
+          <div class="small">A-1-4-2</div>
+        </div><div class="card">
+          <img src="qr/slots/A-2-1-1.png" alt="A-2-1-1" />
+          <div class="label">A-2-1-1</div>
+          <div class="small">A-2-1-1</div>
+        </div><div class="card">
+          <img src="qr/slots/A-2-1-2.png" alt="A-2-1-2" />
+          <div class="label">A-2-1-2</div>
+          <div class="small">A-2-1-2</div>
+        </div><div class="card">
+          <img src="qr/slots/A-2-2-1.png" alt="A-2-2-1" />
+          <div class="label">A-2-2-1</div>
+          <div class="small">A-2-2-1</div>
+        </div><div class="card">
+          <img src="qr/slots/A-2-2-2.png" alt="A-2-2-2" />
+          <div class="label">A-2-2-2</div>
+          <div class="small">A-2-2-2</div>
+        </div><div class="card">
+          <img src="qr/slots/A-2-3-1.png" alt="A-2-3-1" />
+          <div class="label">A-2-3-1</div>
+          <div class="small">A-2-3-1</div>
+        </div><div class="card">
+          <img src="qr/slots/A-2-3-2.png" alt="A-2-3-2" />
+          <div class="label">A-2-3-2</div>
+          <div class="small">A-2-3-2</div>
+        </div><div class="card">
+          <img src="qr/slots/A-2-4-1.png" alt="A-2-4-1" />
+          <div class="label">A-2-4-1</div>
+          <div class="small">A-2-4-1</div>
+        </div><div class="card">
+          <img src="qr/slots/A-2-4-2.png" alt="A-2-4-2" />
+          <div class="label">A-2-4-2</div>
+          <div class="small">A-2-4-2</div>
+        </div><div class="card">
+          <img src="qr/slots/A-3-1-1.png" alt="A-3-1-1" />
+          <div class="label">A-3-1-1</div>
+          <div class="small">A-3-1-1</div>
+        </div><div class="card">
+          <img src="qr/slots/A-3-1-2.png" alt="A-3-1-2" />
+          <div class="label">A-3-1-2</div>
+          <div class="small">A-3-1-2</div>
+        </div><div class="card">
+          <img src="qr/slots/A-3-2-1.png" alt="A-3-2-1" />
+          <div class="label">A-3-2-1</div>
+          <div class="small">A-3-2-1</div>
+        </div><div class="card">
+          <img src="qr/slots/A-3-2-2.png" alt="A-3-2-2" />
+          <div class="label">A-3-2-2</div>
+          <div class="small">A-3-2-2</div>
+        </div><div class="card">
+          <img src="qr/slots/A-3-3-1.png" alt="A-3-3-1" />
+          <div class="label">A-3-3-1</div>
+          <div class="small">A-3-3-1</div>
+        </div><div class="card">
+          <img src="qr/slots/A-3-3-2.png" alt="A-3-3-2" />
+          <div class="label">A-3-3-2</div>
+          <div class="small">A-3-3-2</div>
+        </div><div class="card">
+          <img src="qr/slots/A-3-4-1.png" alt="A-3-4-1" />
+          <div class="label">A-3-4-1</div>
+          <div class="small">A-3-4-1</div>
+        </div><div class="card">
+          <img src="qr/slots/A-3-4-2.png" alt="A-3-4-2" />
+          <div class="label">A-3-4-2</div>
+          <div class="small">A-3-4-2</div>
+        </div><div class="card">
+          <img src="qr/slots/B-1-1-1.png" alt="B-1-1-1" />
+          <div class="label">B-1-1-1</div>
+          <div class="small">B-1-1-1</div>
+        </div><div class="card">
+          <img src="qr/slots/B-1-1-2.png" alt="B-1-1-2" />
+          <div class="label">B-1-1-2</div>
+          <div class="small">B-1-1-2</div>
+        </div><div class="card">
+          <img src="qr/slots/B-1-2-1.png" alt="B-1-2-1" />
+          <div class="label">B-1-2-1</div>
+          <div class="small">B-1-2-1</div>
+        </div><div class="card">
+          <img src="qr/slots/B-1-2-2.png" alt="B-1-2-2" />
+          <div class="label">B-1-2-2</div>
+          <div class="small">B-1-2-2</div>
+        </div><div class="card">
+          <img src="qr/slots/B-1-3-1.png" alt="B-1-3-1" />
+          <div class="label">B-1-3-1</div>
+          <div class="small">B-1-3-1</div>
+        </div><div class="card">
+          <img src="qr/slots/B-1-3-2.png" alt="B-1-3-2" />
+          <div class="label">B-1-3-2</div>
+          <div class="small">B-1-3-2</div>
+        </div><div class="card">
+          <img src="qr/slots/B-1-4-1.png" alt="B-1-4-1" />
+          <div class="label">B-1-4-1</div>
+          <div class="small">B-1-4-1</div>
+        </div><div class="card">
+          <img src="qr/slots/B-1-4-2.png" alt="B-1-4-2" />
+          <div class="label">B-1-4-2</div>
+          <div class="small">B-1-4-2</div>
+        </div><div class="card">
+          <img src="qr/slots/B-2-1-1.png" alt="B-2-1-1" />
+          <div class="label">B-2-1-1</div>
+          <div class="small">B-2-1-1</div>
+        </div><div class="card">
+          <img src="qr/slots/B-2-1-2.png" alt="B-2-1-2" />
+          <div class="label">B-2-1-2</div>
+          <div class="small">B-2-1-2</div>
+        </div><div class="card">
+          <img src="qr/slots/B-2-2-1.png" alt="B-2-2-1" />
+          <div class="label">B-2-2-1</div>
+          <div class="small">B-2-2-1</div>
+        </div><div class="card">
+          <img src="qr/slots/B-2-2-2.png" alt="B-2-2-2" />
+          <div class="label">B-2-2-2</div>
+          <div class="small">B-2-2-2</div>
+        </div><div class="card">
+          <img src="qr/slots/B-2-3-1.png" alt="B-2-3-1" />
+          <div class="label">B-2-3-1</div>
+          <div class="small">B-2-3-1</div>
+        </div><div class="card">
+          <img src="qr/slots/B-2-3-2.png" alt="B-2-3-2" />
+          <div class="label">B-2-3-2</div>
+          <div class="small">B-2-3-2</div>
+        </div><div class="card">
+          <img src="qr/slots/B-2-4-1.png" alt="B-2-4-1" />
+          <div class="label">B-2-4-1</div>
+          <div class="small">B-2-4-1</div>
+        </div><div class="card">
+          <img src="qr/slots/B-2-4-2.png" alt="B-2-4-2" />
+          <div class="label">B-2-4-2</div>
+          <div class="small">B-2-4-2</div>
+        </div><div class="card">
+          <img src="qr/slots/B-3-1-1.png" alt="B-3-1-1" />
+          <div class="label">B-3-1-1</div>
+          <div class="small">B-3-1-1</div>
+        </div><div class="card">
+          <img src="qr/slots/B-3-1-2.png" alt="B-3-1-2" />
+          <div class="label">B-3-1-2</div>
+          <div class="small">B-3-1-2</div>
+        </div><div class="card">
+          <img src="qr/slots/B-3-2-1.png" alt="B-3-2-1" />
+          <div class="label">B-3-2-1</div>
+          <div class="small">B-3-2-1</div>
+        </div><div class="card">
+          <img src="qr/slots/B-3-2-2.png" alt="B-3-2-2" />
+          <div class="label">B-3-2-2</div>
+          <div class="small">B-3-2-2</div>
+        </div><div class="card">
+          <img src="qr/slots/B-3-3-1.png" alt="B-3-3-1" />
+          <div class="label">B-3-3-1</div>
+          <div class="small">B-3-3-1</div>
+        </div><div class="card">
+          <img src="qr/slots/B-3-3-2.png" alt="B-3-3-2" />
+          <div class="label">B-3-3-2</div>
+          <div class="small">B-3-3-2</div>
+        </div><div class="card">
+          <img src="qr/slots/B-3-4-1.png" alt="B-3-4-1" />
+          <div class="label">B-3-4-1</div>
+          <div class="small">B-3-4-1</div>
+        </div><div class="card">
+          <img src="qr/slots/B-3-4-2.png" alt="B-3-4-2" />
+          <div class="label">B-3-4-2</div>
+          <div class="small">B-3-4-2</div>
+        </div><div class="card">
+          <img src="qr/slots/C-1-1-1.png" alt="C-1-1-1" />
+          <div class="label">C-1-1-1</div>
+          <div class="small">C-1-1-1</div>
+        </div><div class="card">
+          <img src="qr/slots/C-1-1-2.png" alt="C-1-1-2" />
+          <div class="label">C-1-1-2</div>
+          <div class="small">C-1-1-2</div>
+        </div><div class="card">
+          <img src="qr/slots/C-1-2-1.png" alt="C-1-2-1" />
+          <div class="label">C-1-2-1</div>
+          <div class="small">C-1-2-1</div>
+        </div><div class="card">
+          <img src="qr/slots/C-1-2-2.png" alt="C-1-2-2" />
+          <div class="label">C-1-2-2</div>
+          <div class="small">C-1-2-2</div>
+        </div><div class="card">
+          <img src="qr/slots/C-1-3-1.png" alt="C-1-3-1" />
+          <div class="label">C-1-3-1</div>
+          <div class="small">C-1-3-1</div>
+        </div><div class="card">
+          <img src="qr/slots/C-1-3-2.png" alt="C-1-3-2" />
+          <div class="label">C-1-3-2</div>
+          <div class="small">C-1-3-2</div>
+        </div><div class="card">
+          <img src="qr/slots/C-1-4-1.png" alt="C-1-4-1" />
+          <div class="label">C-1-4-1</div>
+          <div class="small">C-1-4-1</div>
+        </div><div class="card">
+          <img src="qr/slots/C-1-4-2.png" alt="C-1-4-2" />
+          <div class="label">C-1-4-2</div>
+          <div class="small">C-1-4-2</div>
+        </div><div class="card">
+          <img src="qr/slots/C-2-1-1.png" alt="C-2-1-1" />
+          <div class="label">C-2-1-1</div>
+          <div class="small">C-2-1-1</div>
+        </div><div class="card">
+          <img src="qr/slots/C-2-1-2.png" alt="C-2-1-2" />
+          <div class="label">C-2-1-2</div>
+          <div class="small">C-2-1-2</div>
+        </div><div class="card">
+          <img src="qr/slots/C-2-2-1.png" alt="C-2-2-1" />
+          <div class="label">C-2-2-1</div>
+          <div class="small">C-2-2-1</div>
+        </div><div class="card">
+          <img src="qr/slots/C-2-2-2.png" alt="C-2-2-2" />
+          <div class="label">C-2-2-2</div>
+          <div class="small">C-2-2-2</div>
+        </div><div class="card">
+          <img src="qr/slots/C-2-3-1.png" alt="C-2-3-1" />
+          <div class="label">C-2-3-1</div>
+          <div class="small">C-2-3-1</div>
+        </div><div class="card">
+          <img src="qr/slots/C-2-3-2.png" alt="C-2-3-2" />
+          <div class="label">C-2-3-2</div>
+          <div class="small">C-2-3-2</div>
+        </div><div class="card">
+          <img src="qr/slots/C-2-4-1.png" alt="C-2-4-1" />
+          <div class="label">C-2-4-1</div>
+          <div class="small">C-2-4-1</div>
+        </div><div class="card">
+          <img src="qr/slots/C-2-4-2.png" alt="C-2-4-2" />
+          <div class="label">C-2-4-2</div>
+          <div class="small">C-2-4-2</div>
+        </div><div class="card">
+          <img src="qr/slots/C-3-1-1.png" alt="C-3-1-1" />
+          <div class="label">C-3-1-1</div>
+          <div class="small">C-3-1-1</div>
+        </div><div class="card">
+          <img src="qr/slots/C-3-1-2.png" alt="C-3-1-2" />
+          <div class="label">C-3-1-2</div>
+          <div class="small">C-3-1-2</div>
+        </div><div class="card">
+          <img src="qr/slots/C-3-2-1.png" alt="C-3-2-1" />
+          <div class="label">C-3-2-1</div>
+          <div class="small">C-3-2-1</div>
+        </div><div class="card">
+          <img src="qr/slots/C-3-2-2.png" alt="C-3-2-2" />
+          <div class="label">C-3-2-2</div>
+          <div class="small">C-3-2-2</div>
+        </div><div class="card">
+          <img src="qr/slots/C-3-3-1.png" alt="C-3-3-1" />
+          <div class="label">C-3-3-1</div>
+          <div class="small">C-3-3-1</div>
+        </div><div class="card">
+          <img src="qr/slots/C-3-3-2.png" alt="C-3-3-2" />
+          <div class="label">C-3-3-2</div>
+          <div class="small">C-3-3-2</div>
+        </div><div class="card">
+          <img src="qr/slots/C-3-4-1.png" alt="C-3-4-1" />
+          <div class="label">C-3-4-1</div>
+          <div class="small">C-3-4-1</div>
+        </div><div class="card">
+          <img src="qr/slots/C-3-4-2.png" alt="C-3-4-2" />
+          <div class="label">C-3-4-2</div>
+          <div class="small">C-3-4-2</div>
+        </div><div class="card">
+          <img src="qr/slots/D-1-1-1.png" alt="D-1-1-1" />
+          <div class="label">D-1-1-1</div>
+          <div class="small">D-1-1-1</div>
+        </div><div class="card">
+          <img src="qr/slots/D-1-1-2.png" alt="D-1-1-2" />
+          <div class="label">D-1-1-2</div>
+          <div class="small">D-1-1-2</div>
+        </div><div class="card">
+          <img src="qr/slots/D-1-2-1.png" alt="D-1-2-1" />
+          <div class="label">D-1-2-1</div>
+          <div class="small">D-1-2-1</div>
+        </div><div class="card">
+          <img src="qr/slots/D-1-2-2.png" alt="D-1-2-2" />
+          <div class="label">D-1-2-2</div>
+          <div class="small">D-1-2-2</div>
+        </div><div class="card">
+          <img src="qr/slots/D-1-3-1.png" alt="D-1-3-1" />
+          <div class="label">D-1-3-1</div>
+          <div class="small">D-1-3-1</div>
+        </div><div class="card">
+          <img src="qr/slots/D-1-3-2.png" alt="D-1-3-2" />
+          <div class="label">D-1-3-2</div>
+          <div class="small">D-1-3-2</div>
+        </div><div class="card">
+          <img src="qr/slots/D-1-4-1.png" alt="D-1-4-1" />
+          <div class="label">D-1-4-1</div>
+          <div class="small">D-1-4-1</div>
+        </div><div class="card">
+          <img src="qr/slots/D-1-4-2.png" alt="D-1-4-2" />
+          <div class="label">D-1-4-2</div>
+          <div class="small">D-1-4-2</div>
+        </div><div class="card">
+          <img src="qr/slots/D-2-1-1.png" alt="D-2-1-1" />
+          <div class="label">D-2-1-1</div>
+          <div class="small">D-2-1-1</div>
+        </div><div class="card">
+          <img src="qr/slots/D-2-1-2.png" alt="D-2-1-2" />
+          <div class="label">D-2-1-2</div>
+          <div class="small">D-2-1-2</div>
+        </div><div class="card">
+          <img src="qr/slots/D-2-2-1.png" alt="D-2-2-1" />
+          <div class="label">D-2-2-1</div>
+          <div class="small">D-2-2-1</div>
+        </div><div class="card">
+          <img src="qr/slots/D-2-2-2.png" alt="D-2-2-2" />
+          <div class="label">D-2-2-2</div>
+          <div class="small">D-2-2-2</div>
+        </div><div class="card">
+          <img src="qr/slots/D-2-3-1.png" alt="D-2-3-1" />
+          <div class="label">D-2-3-1</div>
+          <div class="small">D-2-3-1</div>
+        </div><div class="card">
+          <img src="qr/slots/D-2-3-2.png" alt="D-2-3-2" />
+          <div class="label">D-2-3-2</div>
+          <div class="small">D-2-3-2</div>
+        </div><div class="card">
+          <img src="qr/slots/D-2-4-1.png" alt="D-2-4-1" />
+          <div class="label">D-2-4-1</div>
+          <div class="small">D-2-4-1</div>
+        </div><div class="card">
+          <img src="qr/slots/D-2-4-2.png" alt="D-2-4-2" />
+          <div class="label">D-2-4-2</div>
+          <div class="small">D-2-4-2</div>
+        </div><div class="card">
+          <img src="qr/slots/D-3-1-1.png" alt="D-3-1-1" />
+          <div class="label">D-3-1-1</div>
+          <div class="small">D-3-1-1</div>
+        </div><div class="card">
+          <img src="qr/slots/D-3-1-2.png" alt="D-3-1-2" />
+          <div class="label">D-3-1-2</div>
+          <div class="small">D-3-1-2</div>
+        </div><div class="card">
+          <img src="qr/slots/D-3-2-1.png" alt="D-3-2-1" />
+          <div class="label">D-3-2-1</div>
+          <div class="small">D-3-2-1</div>
+        </div><div class="card">
+          <img src="qr/slots/D-3-2-2.png" alt="D-3-2-2" />
+          <div class="label">D-3-2-2</div>
+          <div class="small">D-3-2-2</div>
+        </div><div class="card">
+          <img src="qr/slots/D-3-3-1.png" alt="D-3-3-1" />
+          <div class="label">D-3-3-1</div>
+          <div class="small">D-3-3-1</div>
+        </div><div class="card">
+          <img src="qr/slots/D-3-3-2.png" alt="D-3-3-2" />
+          <div class="label">D-3-3-2</div>
+          <div class="small">D-3-3-2</div>
+        </div><div class="card">
+          <img src="qr/slots/D-3-4-1.png" alt="D-3-4-1" />
+          <div class="label">D-3-4-1</div>
+          <div class="small">D-3-4-1</div>
+        </div><div class="card">
+          <img src="qr/slots/D-3-4-2.png" alt="D-3-4-2" />
+          <div class="label">D-3-4-2</div>
+          <div class="small">D-3-4-2</div>
+        </div>
+  </div>
+
+</body>
+</html>

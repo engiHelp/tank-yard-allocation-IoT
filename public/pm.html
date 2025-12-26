@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>PM Driver App</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <h2>PM Driver App</h2>
+    <div class="card">
+      <div><b>PM ID:</b> <span id="pmId"></span></div>
+      <div class="small">
+        Step 1: Scan Tank QR → Step 2: Receive slot → ACK → Step 3: Scan Slot QR
+        to confirm placement
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Scan Tank QR</h3>
+      <video id="tankVideo" style="width: 100%; max-width: 420px"></video>
+      <div id="tankScanResult" class="small"></div>
+    </div>
+
+    <div class="card">
+      <h3>Current Job</h3>
+      <div><b>Job ID:</b> <span id="jobId">-</span></div>
+      <div><b>Tank ID:</b> <span id="tankId">-</span></div>
+      <div><b>Assigned Slot:</b> <span id="slotId">-</span></div>
+      <button class="primary" id="ackBtn" disabled>ACK Received Job</button>
+    </div>
+
+    <div class="card">
+      <h3>Confirm Placement (Scan Slot QR)</h3>
+      <video id="slotVideo" style="width: 100%; max-width: 420px"></video>
+      <div id="slotScanResult" class="small"></div>
+    </div>
+
+    <!-- QR Scanner Library -->
+    <script src="https://unpkg.com/qr-scanner/qr-scanner.umd.min.js"></script>
+    <script src="pm.js"></script>
+  </body>
+</html>

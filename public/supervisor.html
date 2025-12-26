@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Supervisor Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <h2>Supervisor Dashboard</h2>
+
+    <div class="row">
+      <div class="card" style="flex: 1">
+        <h3>Trigger Arrival (Fallback)</h3>
+        <button class="primary" id="arrivalBtn">Trigger Tank Arrival</button>
+        <div class="small">
+          ESP32 will call the same endpoint: <b>/api/arrival</b>
+        </div>
+      </div>
+
+      <div class="card" style="flex: 1">
+        <h3>KPIs</h3>
+        <div>Total Jobs: <b id="k1">0</b></div>
+        <div>Completed: <b id="k2">0</b></div>
+        <div>Misallocations: <b id="k3">0</b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Yard Occupancy Grid (96 slots)</h3>
+      <div id="grid" class="grid"></div>
+      <div class="small">Green=FREE, Yellow=ASSIGNED, Red=OCCUPIED</div>
+    </div>
+
+    <div class="row">
+      <div class="card" style="flex: 1">
+        <h3>Live Jobs</h3>
+        <div id="jobs"></div>
+      </div>
+      <div class="card" style="flex: 1">
+        <h3>Events / Logs</h3>
+        <div id="events"></div>
+      </div>
+    </div>
+
+    <script src="supervisor.js"></script>
+  </body>
+</html>

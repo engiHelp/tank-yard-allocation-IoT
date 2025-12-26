@@ -1,0 +1,5 @@
+node_modules/
+server/node_modules/
+server/yard.db
+.DS_Store
+.env
