@@ -80,7 +80,8 @@ app.post("/api/arrival", (req, res) => {
 });
 
 // ---------- API: Scan tank QR ----------
-app.post("/api/tank/scan", (req, res) => {
+/* app.post("/api/tank/scan", (req, res) => {
+
   const { tank_id, pm_id } = req.body;
   if (!tank_id || !pm_id)
     return res
@@ -181,6 +182,137 @@ app.post("/api/tank/scan", (req, res) => {
       );
     }
   );
+}); */
+
+// ---------- API: Scan tank QR ----------
+app.post("/api/tank/scan", (req, res) => {
+  const { tank_id, pm_id } = req.body;
+
+  if (!tank_id || !pm_id) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "tank_id and pm_id required" });
+  }
+
+  // 1) check tank exists (planning table)
+  db.get(`SELECT * FROM tanks WHERE tank_id=?`, [tank_id], (err, tankRow) => {
+    if (err) return res.status(500).json({ ok: false, error: err.message });
+
+    if (!tankRow) {
+      logEvent("SCAN_FAIL", `Tank ${tank_id} not found in planning table`);
+      return res
+        .status(404)
+        .json({ ok: false, error: "Tank not found in planning table" });
+    }
+
+    // 2) block if tank already ACTIVE (ASSIGNED/ACK)
+    db.get(
+      `SELECT * FROM jobs
+       WHERE tank_id=? AND status IN ('ASSIGNED','ACK')
+       ORDER BY job_id DESC LIMIT 1`,
+      [tank_id],
+      (e0, existingActive) => {
+        if (e0) return res.status(500).json({ ok: false, error: e0.message });
+
+        if (existingActive) {
+          logEvent(
+            "DUPLICATE_TANK_SCAN",
+            `Tank ${tank_id} already active for ${existingActive.pm_id} (Job ${existingActive.job_id})`
+          );
+          return res.status(409).json({
+            ok: false,
+            error: `Tank already assigned to ${existingActive.pm_id}`,
+            job_id: existingActive.job_id,
+            assigned_slot: existingActive.assigned_slot,
+            assigned_pm: existingActive.pm_id,
+          });
+        }
+
+        // 3) (optional) block if tank already COMPLETED
+        db.get(
+          `SELECT * FROM jobs
+           WHERE tank_id=? AND status='COMPLETED'
+           ORDER BY job_id DESC LIMIT 1`,
+          [tank_id],
+          (e1, completedJob) => {
+            if (e1)
+              return res.status(500).json({ ok: false, error: e1.message });
+
+            if (completedJob) {
+              logEvent(
+                "TANK_ALREADY_COMPLETED",
+                `Tank ${tank_id} already completed (Job ${completedJob.job_id})`
+              );
+              return res.status(409).json({
+                ok: false,
+                error: `Tank already completed (already placed).`,
+                job_id: completedJob.job_id,
+                placed_slot: completedJob.assigned_slot,
+              });
+            }
+
+            // 4) allocate a slot
+            allocateSlot((err2, slotId) => {
+              if (err2) {
+                logEvent("ALLOC_FAIL", err2.message);
+                return res.status(500).json({ ok: false, error: err2.message });
+              }
+
+              // 5) create job
+              db.run(
+                `INSERT INTO jobs (tank_id, pm_id, assigned_slot, status, ts_created, last_sent_ts, resend_count)
+                 VALUES (?,?,?,?,?,?,?)`,
+                [tank_id, pm_id, slotId, "ASSIGNED", now(), 0, 0],
+                function (err3) {
+                  if (err3) {
+                    // If DB unique index blocks duplicates (best protection)
+                    if (
+                      (err3.message || "").includes("SQLITE_CONSTRAINT") ||
+                      (err3.code || "") === "SQLITE_CONSTRAINT"
+                    ) {
+                      logEvent(
+                        "DB_CONSTRAINT_BLOCK",
+                        `DB blocked duplicate job for tank ${tank_id} or slot ${slotId}`
+                      );
+                      return res.status(409).json({
+                        ok: false,
+                        error:
+                          "This tank or slot is already active in another job. Try again.",
+                      });
+                    }
+
+                    return res
+                      .status(500)
+                      .json({ ok: false, error: err3.message });
+                  }
+
+                  const jobId = this.lastID;
+
+                  logEvent(
+                    "ALLOC_OK",
+                    `Tank ${tank_id} assigned to ${slotId} for ${pm_id} (Job ${jobId})`
+                  );
+
+                  // push to PM via WebSocket
+                  pushJobToPM(pm_id, {
+                    job_id: jobId,
+                    tank_id,
+                    slot_id: slotId,
+                  });
+
+                  return res.json({
+                    ok: true,
+                    job_id: jobId,
+                    assigned_slot: slotId,
+                  });
+                }
+              );
+            });
+          }
+        );
+      }
+    );
+  });
 });
 
 function pushJobToPM(pm_id, payload) {

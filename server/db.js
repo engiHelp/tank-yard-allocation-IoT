@@ -49,14 +49,15 @@ db.serialize(() => {
     )
   `);
 
-  // ✅ prevent same tank being active in multiple jobs
+  // ✅ Prevent the same tank being active in multiple jobs
+  // (Active = ASSIGNED or ACK)
   db.run(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_active_tank
     ON jobs(tank_id)
     WHERE status IN ('ASSIGNED','ACK')
   `);
 
-  // ✅ prevent same slot being active in multiple jobs
+  // ✅ Prevent the same slot being active in multiple jobs
   db.run(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_active_slot
     ON jobs(assigned_slot)
