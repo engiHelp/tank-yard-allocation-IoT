@@ -2,8 +2,32 @@ const gridEl = document.getElementById("grid");
 const jobsEl = document.getElementById("jobs");
 const eventsEl = document.getElementById("events");
 
+const lastUpdatedEl = document.getElementById("lastUpdated");
+const pmPill = document.getElementById("pmPill");
+
+const sd_slot = document.getElementById("sd_slot");
+const sd_status = document.getElementById("sd_status");
+const sd_job = document.getElementById("sd_job");
+const sd_tank = document.getElementById("sd_tank");
+const sd_pm = document.getElementById("sd_pm");
+
+let selectedSlotId = null;
+let tabMode = "ACTIVE"; // ACTIVE | COMPLETED
+
 document.getElementById("arrivalBtn").onclick = async () => {
   await fetch("/api/arrival", { method: "POST" });
+};
+
+document.getElementById("tabActive").onclick = () => {
+  tabMode = "ACTIVE";
+  document.getElementById("tabActive").classList.add("active");
+  document.getElementById("tabCompleted").classList.remove("active");
+};
+
+document.getElementById("tabCompleted").onclick = () => {
+  tabMode = "COMPLETED";
+  document.getElementById("tabCompleted").classList.add("active");
+  document.getElementById("tabActive").classList.remove("active");
 };
 
 function slotClass(status) {
@@ -12,107 +36,118 @@ function slotClass(status) {
   return "slot occupied";
 }
 
+function badgeClass(status) {
+  if (status === "ASSIGNED") return "badge assigned";
+  if (status === "ACK") return "badge ack";
+  if (status === "COMPLETED") return "badge completed";
+  return "badge";
+}
+
+function setSlotDetails(slot, jobs) {
+  if (!slot) {
+    sd_slot.textContent = "-";
+    sd_status.textContent = "-";
+    sd_job.textContent = "-";
+    sd_tank.textContent = "-";
+    sd_pm.textContent = "-";
+    return;
+  }
+
+  sd_slot.textContent = slot.slot_id;
+  sd_status.textContent = slot.status;
+
+  // find latest job for this slot
+  const j = jobs.find((x) => x.assigned_slot === slot.slot_id);
+  if (j) {
+    sd_job.textContent = j.job_id;
+    sd_tank.textContent = j.tank_id;
+    sd_pm.textContent = j.pm_id;
+  } else {
+    sd_job.textContent = "-";
+    sd_tank.textContent = "-";
+    sd_pm.textContent = "-";
+  }
+}
+
 async function refresh() {
   const r = await fetch("/api/supervisor/state");
-  const j = await r.json();
-  if (!j.ok) return;
+  const data = await r.json();
+  if (!data.ok) return;
+
+  const { jobs, slots, events, kpis } = data;
 
   // KPIs
-  document.getElementById("k1").textContent = j.kpis.totalJobs;
-  document.getElementById("k2").textContent = j.kpis.completedJobs;
-  document.getElementById("k3").textContent = j.kpis.misallocations;
+  document.getElementById("k1").textContent = kpis.totalJobs;
+  document.getElementById("k2").textContent = kpis.completedJobs;
+  document.getElementById("k3").textContent = kpis.misallocations;
 
-  // Grid
+  // Active PM count (from active jobs + connected logs approximation)
+  const activePms = new Set(
+    jobs.filter((j) => j.status !== "COMPLETED").map((j) => j.pm_id)
+  );
+  document.getElementById("k4").textContent = activePms.size;
+  pmPill.textContent = `Active PMs: ${activePms.size}`;
+
+  lastUpdatedEl.textContent = ` • Updated ${new Date().toLocaleTimeString()}`;
+
+  // Grid render
   gridEl.innerHTML = "";
-  // sort slots by block then bay,row,tier
-  const slots = j.slots.sort((a, b) => a.slot_id.localeCompare(b.slot_id));
-  for (const s of slots) {
+  const sortedSlots = slots.sort((a, b) => a.slot_id.localeCompare(b.slot_id));
+
+  for (const s of sortedSlots) {
     const div = document.createElement("div");
-    div.className = slotClass(s.status);
+    div.className =
+      slotClass(s.status) + (s.slot_id === selectedSlotId ? " selected" : "");
     div.textContent = s.slot_id;
 
-    // Click-to-release (only if ASSIGNED or OCCUPIED)
-    div.style.cursor = s.status === "FREE" ? "default" : "pointer";
-    div.title =
-      `Slot ${s.slot_id} | Status: ${s.status}` +
-      (s.status === "FREE" ? "" : " | Click to release");
-
-    div.onclick = async () => {
-      if (s.status === "FREE") return;
-
-      const ok = confirm(`Release slot ${s.slot_id}? (${s.status} -> FREE)`);
-      if (!ok) return;
-
-      const r = await fetch("/api/slot/release", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slot_id: s.slot_id }),
-      });
-      const out = await r.json();
-      if (!out.ok) alert(out.error || "Failed to release slot");
-
-      refresh();
+    div.onclick = () => {
+      selectedSlotId = s.slot_id;
+      setSlotDetails(s, jobs);
+      refresh(); // re-render selection outline immediately
     };
 
     gridEl.appendChild(div);
   }
 
-  // Jobs list
-  const activeJobs = j.jobs.filter((x) => x.status !== "COMPLETED");
-  const completedJobs = j.jobs.filter((x) => x.status === "COMPLETED");
-
-  jobsEl.innerHTML = `
-  <div style="margin-bottom:8px;">
-    <b>Active Jobs</b> <span class="small">(${activeJobs.length})</span>
-  </div>
-
-  ${
-    activeJobs.length
-      ? activeJobs
-          .map(
-            (job) => `
-    <div class="card">
-      <div><b>Job ${job.job_id}</b> | ${job.status}</div>
-      <div>Tank: ${job.tank_id} | PM: ${job.pm_id}</div>
-      <div>Slot: ${job.assigned_slot}</div>
-    </div>
-  `
-          )
-          .join("")
-      : `<div class="small">No active jobs</div>`
+  // If slot already selected, keep details synced
+  if (selectedSlotId) {
+    const slot = sortedSlots.find((x) => x.slot_id === selectedSlotId);
+    setSlotDetails(slot, jobs);
   }
 
-  <div style="margin-top:14px;margin-bottom:8px;">
-    <b>Completed (latest)</b> <span class="small">(${
-      completedJobs.length
-    })</span>
-  </div>
+  // Jobs list with tabs
+  let visibleJobs =
+    tabMode === "ACTIVE"
+      ? jobs.filter((j) => j.status !== "COMPLETED")
+      : jobs.filter((j) => j.status === "COMPLETED");
 
-  ${
-    completedJobs.length
-      ? completedJobs
-          .map(
-            (job) => `
-    <div class="card" style="opacity:0.75;">
-      <div><b>Job ${job.job_id}</b> | ${job.status}</div>
-      <div>Tank: ${job.tank_id} | PM: ${job.pm_id}</div>
-      <div>Slot: ${job.assigned_slot}</div>
+  // show newest first
+  visibleJobs = visibleJobs.sort((a, b) => b.job_id - a.job_id);
+
+  jobsEl.innerHTML = visibleJobs
+    .map(
+      (job) => `
+    <div class="jobCard">
+      <div class="row">
+        <div><b>Job ${job.job_id}</b></div>
+        <div class="${badgeClass(job.status)}">${job.status}</div>
+      </div>
+      <div class="small" style="margin-top:6px">
+        Tank: <b>${job.tank_id}</b> • PM: <b>${job.pm_id}</b>
+      </div>
+      <div class="small">Slot: <b>${job.assigned_slot}</b></div>
     </div>
   `
-          )
-          .join("")
-      : `<div class="small">No completed jobs</div>`
-  }
-`;
+    )
+    .join("");
 
   // Events
-  const recentEvents = j.events.slice(0, 15); // newest first already
-  eventsEl.innerHTML = recentEvents
+  eventsEl.innerHTML = events
     .map(
       (e) => `
-    <div class="small">[${new Date(e.ts).toLocaleTimeString()}] <b>${
-        e.type
-      }</b> - ${e.message}</div>
+    <div class="logLine">
+      [${new Date(e.ts).toLocaleTimeString()}] <b>${e.type}</b> — ${e.message}
+    </div>
   `
     )
     .join("");

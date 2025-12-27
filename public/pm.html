@@ -4,39 +4,90 @@
     <meta charset="utf-8" />
     <title>PM Driver App</title>
     <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
   </head>
   <body>
-    <h2>PM Driver App</h2>
-    <div class="card">
-      <div><b>PM ID:</b> <span id="pmId"></span></div>
-      <div class="small">
-        Step 1: Scan Tank QR → Step 2: Receive slot → ACK → Step 3: Scan Slot QR
-        to confirm placement
+    <div class="container">
+      <div class="topbar">
+        <div>
+          <div class="title">PM Driver App</div>
+          <div class="subtitle">
+            PM: <b><span id="pmId"></span></b> •
+            <span id="connStatus" class="pill warn">Connecting...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Step 1 — Scan Tank QR</h3>
+        <div class="videoBox">
+          <video id="tankVideo" playsinline></video>
+        </div>
+        <div id="tankScanResult" class="notice"></div>
+        <div class="notice">
+          Tip: On phone, give camera permission. If camera fails on Wi-Fi IP,
+          try Chrome and allow camera.
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 14px">
+        <h3>Step 2 — Job Received</h3>
+        <div class="row" style="align-items: center">
+          <div>
+            <div class="small">Assigned Slot</div>
+            <div class="bigSlot" id="slotId">-</div>
+          </div>
+          <div style="text-align: right">
+            <div class="small">Job</div>
+            <div style="font-weight: 900; font-size: 18px" id="jobId">-</div>
+          </div>
+        </div>
+
+        <div class="notice" style="margin-top: 10px">
+          Tank: <b><span id="tankId">-</span></b>
+        </div>
+
+        <div
+          style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap"
+        >
+          <button class="btn" id="ackBtn" disabled>Send ACK</button>
+          <button class="btn secondary" id="clearBtn">Clear Job (demo)</button>
+        </div>
+
+        <div id="jobMsg" class="notice"></div>
+      </div>
+
+      <div class="card" style="margin-top: 14px">
+        <h3>Step 3 — Confirm Placement (Scan Slot QR)</h3>
+        <div class="videoBox">
+          <video id="slotVideo" playsinline></video>
+        </div>
+        <div id="slotScanResult" class="notice"></div>
+
+        <div class="notice">
+          Slot scanning will start only after a job is assigned.
+        </div>
+
+        <div style="margin-top: 10px">
+          <div class="small">Manual fallback (if camera fails)</div>
+          <input
+            id="manualSlot"
+            placeholder="e.g., C-1-1-1"
+            style="
+              width: 100%;
+              padding: 10px;
+              border-radius: 12px;
+              border: 1px solid var(--border);
+              margin-top: 6px;
+            "
+          />
+          <button class="btn secondary" id="manualBtn" style="margin-top: 10px">
+            Confirm Using Manual Slot
+          </button>
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <h3>Scan Tank QR</h3>
-      <video id="tankVideo" style="width: 100%; max-width: 420px"></video>
-      <div id="tankScanResult" class="small"></div>
-    </div>
-
-    <div class="card">
-      <h3>Current Job</h3>
-      <div><b>Job ID:</b> <span id="jobId">-</span></div>
-      <div><b>Tank ID:</b> <span id="tankId">-</span></div>
-      <div><b>Assigned Slot:</b> <span id="slotId">-</span></div>
-      <!-- <button class="primary" id="ackBtn" disabled>ACK Received Job</button> -->
-      <button class="primary" id="ackBtn" disabled>Send ACK</button>
-    </div>
-
-    <div class="card">
-      <h3>Confirm Placement (Scan Slot QR)</h3>
-      <video id="slotVideo" style="width: 100%; max-width: 420px"></video>
-      <div id="slotScanResult" class="small"></div>
-    </div>
-
-    <!-- QR Scanner Library -->
     <script src="https://unpkg.com/qr-scanner/qr-scanner.umd.min.js"></script>
     <script src="pm.js"></script>
   </body>

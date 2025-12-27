@@ -6,39 +6,107 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <h2>Supervisor Dashboard</h2>
-
-    <div class="row">
-      <div class="card" style="flex: 1">
-        <h3>Trigger Arrival (Fallback)</h3>
-        <button class="primary" id="arrivalBtn">Trigger Tank Arrival</button>
-        <div class="small">
-          ESP32 will call the same endpoint: <b>/api/arrival</b>
+    <div class="container">
+      <div class="topbar">
+        <div>
+          <div class="title">Supervisor Dashboard</div>
+          <div class="subtitle">
+            Yard Occupancy + Live Jobs + Event Logs
+            <span id="lastUpdated"></span>
+          </div>
+        </div>
+        <div class="pills">
+          <div class="pill ok" id="serverPill">Server: ONLINE</div>
+          <div class="pill" id="pmPill">Active PMs: 0</div>
         </div>
       </div>
 
-      <div class="card" style="flex: 1">
-        <h3>KPIs</h3>
-        <div>Total Jobs: <b id="k1">0</b></div>
-        <div>Completed: <b id="k2">0</b></div>
-        <div>Misallocations: <b id="k3">0</b></div>
-      </div>
-    </div>
+      <div class="grid2">
+        <div class="card">
+          <h3>Arrival Trigger (Fallback)</h3>
+          <button class="btn" id="arrivalBtn">Trigger Tank Arrival</button>
+          <div class="small" style="margin-top: 8px">
+            ESP32 calls the same endpoint: <b>/api/arrival</b>
+          </div>
+        </div>
 
-    <div class="card">
-      <h3>Yard Occupancy Grid (96 slots)</h3>
-      <div id="grid" class="grid"></div>
-      <div class="small">Green=FREE, Yellow=ASSIGNED, Red=OCCUPIED</div>
-    </div>
-
-    <div class="row">
-      <div class="card" style="flex: 1">
-        <h3>Live Jobs</h3>
-        <div id="jobs"></div>
+        <div class="card">
+          <h3>KPIs</h3>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="label">Total Jobs</div>
+              <div class="value" id="k1">-</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Completed</div>
+              <div class="value" id="k2">-</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Misallocations</div>
+              <div class="value" id="k3">-</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Active PMs</div>
+              <div class="value" id="k4">-</div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card" style="flex: 1">
-        <h3>Events / Logs</h3>
-        <div id="events"></div>
+
+      <div class="card" style="margin-top: 14px">
+        <h3>Yard Occupancy Grid (96 slots)</h3>
+
+        <div class="yardWrap">
+          <div>
+            <div id="grid" class="yardGrid"></div>
+
+            <div class="legend">
+              <div class="legendItem"><span class="dot free"></span> Free</div>
+              <div class="legendItem">
+                <span class="dot assigned"></span> Assigned
+              </div>
+              <div class="legendItem">
+                <span class="dot occupied"></span> Occupied
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="box-shadow: none">
+            <h3>Slot Details</h3>
+            <div class="small">Click any slot on the grid.</div>
+            <div style="margin-top: 10px">
+              <div><b>Slot:</b> <span id="sd_slot">-</span></div>
+              <div><b>Status:</b> <span id="sd_status">-</span></div>
+              <div style="margin-top: 10px">
+                <b>Job:</b> <span id="sd_job">-</span>
+              </div>
+              <div><b>Tank:</b> <span id="sd_tank">-</span></div>
+              <div><b>PM:</b> <span id="sd_pm">-</span></div>
+            </div>
+            <div class="notice" style="margin-top: 10px">
+              Tip: “Assigned” slot may have an active job linked.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top: 14px">
+        <div class="card">
+          <h3>Live Jobs</h3>
+
+          <div class="tabs">
+            <div class="tab active" id="tabActive">Active</div>
+            <div class="tab" id="tabCompleted">Completed</div>
+          </div>
+
+          <div id="jobs"></div>
+        </div>
+
+        <div class="card">
+          <h3>Events / Logs</h3>
+          <div id="events"></div>
+          <div class="notice">Showing latest events (limited by backend).</div>
+        </div>
       </div>
     </div>
 
