@@ -289,3 +289,20 @@ app.get("/api/supervisor/state", (req, res) => {
     });
   });
 });
+
+app.get("/api/pm/job", (req, res) => {
+  const pm_id = req.query.pm_id;
+  if (!pm_id)
+    return res.status(400).json({ ok: false, error: "pm_id required" });
+
+  db.get(
+    `SELECT * FROM jobs
+     WHERE pm_id=? AND status IN ('ASSIGNED','ACK')
+     ORDER BY job_id DESC LIMIT 1`,
+    [pm_id],
+    (err, job) => {
+      if (err) return res.status(500).json({ ok: false, error: err.message });
+      res.json({ ok: true, job: job || null });
+    }
+  );
+});

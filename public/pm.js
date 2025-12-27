@@ -7,8 +7,12 @@ let currentJobId = null;
 let currentTankId = null;
 let currentSlotId = null;
 
-// ✅ Prevent repeated QR scans creating multiple jobs
+// Locks to prevent repeated scans spamming requests
 let tankScanLock = false;
+let slotScanLock = false;
+
+// Slot format: A-1-1-1 (Blocks A-D)
+const SLOT_PATTERN = /^[A-D]-\d+-\d+-\d+$/i;
 
 // Connect WebSocket (supports HTTP + HTTPS)
 const wsProto = location.protocol === "https:" ? "wss" : "ws";
@@ -17,6 +21,7 @@ const ws = new WebSocket(wsUrl);
 
 ws.onmessage = (evt) => {
   const data = JSON.parse(evt.data);
+
   if (data.type === "JOB") {
     currentJobId = data.job_id;
     currentTankId = data.tank_id;
@@ -28,8 +33,7 @@ ws.onmessage = (evt) => {
 
     document.getElementById("ackBtn").disabled = false;
 
-    // Keep tankScanLock locked because we already accepted a job.
-    // Driver should not scan another tank until this job is completed.
+    // Once a job is assigned, block scanning a new tank until placement is confirmed
     tankScanLock = true;
   }
 };
@@ -48,15 +52,32 @@ const tankResult = document.getElementById("tankScanResult");
 const tankScanner = new QrScanner(
   tankVideo,
   async (result) => {
-    // ✅ Lock to prevent duplicate scans firing many POST requests
-    if (tankScanLock) return;
-    tankScanLock = true;
+    // If job is ongoing, do not accept another tank scan
+    if (tankScanLock) {
+      tankResult.textContent =
+        "⚠️ Current job is active. Confirm placement (scan Slot QR) before scanning a new Tank QR.";
+      return;
+    }
 
-    const tankId = result.data.trim();
+    // Debounce rapid repeated reads of the same QR
+    if (slotScanLock) return; // simple guard (reuse lock during network request)
+    slotScanLock = true;
+
+    const raw = (result.data || "").trim();
+    const upper = raw.toUpperCase();
+
+    // ✅ Only accept Tank QR that starts with "TANK"
+    // This prevents slot QR like "C-1-1-1" being treated as a tank
+    if (!upper.startsWith("TANK")) {
+      tankResult.textContent = `⚠️ Not a Tank QR: "${raw}". Please scan a Tank QR like TANK001.`;
+      slotScanLock = false;
+      return;
+    }
+
+    const tankId = raw;
     tankResult.textContent = `✅ Tank QR Scanned: ${tankId}`;
 
     try {
-      // Send to backend
       const r = await fetch("/api/tank/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -67,15 +88,24 @@ const tankScanner = new QrScanner(
 
       if (!j.ok) {
         tankResult.textContent = `❌ Error: ${j.error}`;
-        // ✅ Unlock so user can try scanning again
-        tankScanLock = false;
-      } else {
-        tankResult.textContent = `✅ Sent tank ${tankId}. Waiting for slot assignment...`;
-        // Keep locked until job completes (or you can stop scanner)
-        // await tankScanner.stop();
+        slotScanLock = false;
+        tankScanLock = false; // allow retry
+        return;
       }
+
+      tankResult.textContent = `✅ Tank sent. Waiting for slot assignment...`;
+
+      // Stop tank scanner now to avoid it scanning the slot QR accidentally
+      // while driver is trying to confirm placement.
+      await tankScanner.stop();
+      tankVideo.srcObject = null; // force camera stream stop for tank scanner
+
+      // Lock tank scans until job completes
+      tankScanLock = true;
+      slotScanLock = false;
     } catch (err) {
       tankResult.textContent = `❌ Network error: ${err.message}`;
+      slotScanLock = false;
       tankScanLock = false;
     }
   },
@@ -84,7 +114,7 @@ const tankScanner = new QrScanner(
 
 // Start tank scanner (with error handling)
 tankScanner.start().catch((err) => {
-  tankResult.textContent = `❌ Camera error: ${err.name} - ${err.message}. Use HTTPS + allow camera permission.`;
+  tankResult.textContent = `❌ Camera error: ${err.name} - ${err.message}. Allow camera permission (and use HTTPS if needed).`;
 });
 
 // ---- QR Scanning (Slot confirmation) ----
@@ -94,10 +124,21 @@ const slotResult = document.getElementById("slotScanResult");
 const slotScanner = new QrScanner(
   slotVideo,
   async (result) => {
-    const scannedSlot = result.data.trim();
+    if (slotScanLock) return;
+    slotScanLock = true;
+
+    const scannedSlot = (result.data || "").trim();
+
+    // ✅ Validate slot format (A-1-1-1)
+    if (!SLOT_PATTERN.test(scannedSlot)) {
+      slotResult.textContent = `⚠️ Not a valid Slot QR: "${scannedSlot}".`;
+      slotScanLock = false;
+      return;
+    }
 
     if (!currentJobId) {
-      slotResult.textContent = `❌ No active job to confirm.`;
+      slotResult.textContent = `❌ No active job to confirm. Scan a Tank QR first.`;
+      slotScanLock = false;
       return;
     }
 
@@ -118,7 +159,7 @@ const slotScanner = new QrScanner(
       if (j.ok) {
         slotResult.textContent = `✅ Placement confirmed at ${scannedSlot}. Job completed.`;
 
-        // Reset job display
+        // Reset job
         currentJobId = null;
         currentTankId = null;
         currentSlotId = null;
@@ -126,17 +167,22 @@ const slotScanner = new QrScanner(
         document.getElementById("jobId").textContent = "-";
         document.getElementById("tankId").textContent = "-";
         document.getElementById("slotId").textContent = "-";
+        document.getElementById("ackBtn").disabled = true;
 
-        // ✅ Unlock tank scanning for the next tank/job
+        // Unlock tank scanning for next job
         tankScanLock = false;
 
-        // (Optional) Also re-enable ACK button state for next job
-        document.getElementById("ackBtn").disabled = true;
+        // Restart tank scanner for next tank
+        await tankScanner.start().catch(() => {});
+
+        slotScanLock = false;
       } else {
         slotResult.textContent = `❌ ${j.error}. Correct slot: ${j.correct_slot}`;
+        slotScanLock = false;
       }
     } catch (err) {
       slotResult.textContent = `❌ Network error: ${err.message}`;
+      slotScanLock = false;
     }
   },
   { returnDetailedScanResult: true }
@@ -144,5 +190,33 @@ const slotScanner = new QrScanner(
 
 // Start slot scanner (with error handling)
 slotScanner.start().catch((err) => {
-  slotResult.textContent = `❌ Camera error: ${err.name} - ${err.message}. Use HTTPS + allow camera permission.`;
+  slotResult.textContent = `❌ Camera error: ${err.name} - ${err.message}. Allow camera permission (and use HTTPS if needed).`;
 });
+
+// -------- Optional but Recommended: Recover job if page refreshes --------
+// This needs server endpoint: GET /api/pm/job?pm_id=PM1
+async function recoverJobIfAny() {
+  try {
+    const r = await fetch(`/api/pm/job?pm_id=${encodeURIComponent(pmId)}`);
+    const j = await r.json();
+    if (!j.ok || !j.job) return;
+
+    currentJobId = j.job.job_id;
+    currentTankId = j.job.tank_id;
+    currentSlotId = j.job.assigned_slot;
+
+    document.getElementById("jobId").textContent = currentJobId;
+    document.getElementById("tankId").textContent = currentTankId;
+    document.getElementById("slotId").textContent = currentSlotId;
+
+    document.getElementById("ackBtn").disabled = false;
+
+    // If we already have an active job, block tank scanning and stop tank scanner
+    tankScanLock = true;
+    await tankScanner.stop().catch(() => {});
+  } catch (e) {
+    // ignore
+  }
+}
+
+recoverJobIfAny();
