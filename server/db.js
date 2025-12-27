@@ -48,6 +48,20 @@ db.serialize(() => {
       ts INTEGER
     )
   `);
+
+  // ✅ prevent same tank being active in multiple jobs
+  db.run(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_active_tank
+    ON jobs(tank_id)
+    WHERE status IN ('ASSIGNED','ACK')
+  `);
+
+  // ✅ prevent same slot being active in multiple jobs
+  db.run(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_active_slot
+    ON jobs(assigned_slot)
+    WHERE status IN ('ASSIGNED','ACK')
+  `);
 });
 
 module.exports = db;

@@ -127,6 +127,60 @@ app.post("/api/tank/scan", (req, res) => {
       );
     });
   });
+
+  // ✅ block duplicate tank jobs (already assigned or acknowledged)
+  db.get(
+    `SELECT * FROM jobs 
+   WHERE tank_id=? AND status IN ('ASSIGNED','ACK') 
+   ORDER BY job_id DESC LIMIT 1`,
+    [tank_id],
+    (e0, existingJob) => {
+      if (e0) return res.status(500).json({ ok: false, error: e0.message });
+
+      if (existingJob) {
+        logEvent(
+          "DUPLICATE_TANK_SCAN",
+          `Tank ${tank_id} already assigned to ${existingJob.pm_id} (Job ${existingJob.job_id})`
+        );
+        return res.status(409).json({
+          ok: false,
+          error: `Tank already assigned to ${existingJob.pm_id}`,
+          job_id: existingJob.job_id,
+          assigned_slot: existingJob.assigned_slot,
+          assigned_pm: existingJob.pm_id,
+        });
+      }
+
+      // ✅ block if tank already completed before (optional but good)
+      db.get(
+        `SELECT * FROM jobs 
+       WHERE tank_id=? AND status='COMPLETED' 
+       ORDER BY job_id DESC LIMIT 1`,
+        [tank_id],
+        (e1, completedJob) => {
+          if (e1) return res.status(500).json({ ok: false, error: e1.message });
+
+          if (completedJob) {
+            logEvent(
+              "TANK_ALREADY_COMPLETED",
+              `Tank ${tank_id} already completed (Job ${completedJob.job_id})`
+            );
+            return res.status(409).json({
+              ok: false,
+              error: `Tank already completed (already placed).`,
+              job_id: completedJob.job_id,
+              placed_slot: completedJob.assigned_slot,
+            });
+          }
+
+          // ✅ THEN continue with allocateSlot() and create job (your existing code)
+          allocateSlot((err2, slotId) => {
+            // existing code...
+          });
+        }
+      );
+    }
+  );
 });
 
 function pushJobToPM(pm_id, payload) {
@@ -205,8 +259,39 @@ app.post("/api/job/confirm", (req, res) => {
       });
     }
 
+    db.get(
+      `SELECT status FROM slots WHERE slot_id=?`,
+      [scanned_slot],
+      (eS, srow) => {
+        if (eS) return res.status(500).json({ ok: false, error: eS.message });
+        if (!srow)
+          return res.status(404).json({ ok: false, error: "Slot not found" });
+
+        if (srow.status === "OCCUPIED") {
+          logEvent(
+            "SLOT_ALREADY_OCCUPIED",
+            `Slot ${scanned_slot} is already OCCUPIED`
+          );
+          return res.json({ ok: false, error: "Slot already occupied" });
+        }
+
+        // ✅ proceed with your existing serialize() update
+        db.serialize(() => {
+          db.run(`UPDATE slots SET status='OCCUPIED' WHERE slot_id=?`, [
+            scanned_slot,
+          ]);
+          db.run(
+            `UPDATE jobs SET status='COMPLETED', ts_placed=? WHERE job_id=?`,
+            [now(), job_id]
+          );
+          logEvent("PLACED_OK", `Job ${job_id} confirmed at ${scanned_slot}`);
+          res.json({ ok: true, message: "Placement confirmed" });
+        });
+      }
+    );
+
     // mark slot occupied + job completed
-    db.serialize(() => {
+    /* db.serialize(() => {
       db.run(`UPDATE slots SET status='OCCUPIED' WHERE slot_id=?`, [
         scanned_slot,
       ]);
@@ -216,7 +301,7 @@ app.post("/api/job/confirm", (req, res) => {
       ]);
       logEvent("PLACED_OK", `Job ${job_id} confirmed at ${scanned_slot}`);
       res.json({ ok: true, message: "Placement confirmed" });
-    });
+    }); */
   });
 });
 
@@ -262,14 +347,14 @@ app.post("/api/slot/release", (req, res) => {
 
 // ---------- Supervisor data ----------
 app.get("/api/supervisor/state", (req, res) => {
-  db.all(`SELECT * FROM jobs ORDER BY job_id DESC LIMIT 50`, (err, jobs) => {
+  db.all(`SELECT * FROM jobs ORDER BY job_id DESC LIMIT 15`, (err, jobs) => {
     if (err) return res.status(500).json({ ok: false, error: err.message });
 
     db.all(`SELECT * FROM slots`, (err2, slots) => {
       if (err2) return res.status(500).json({ ok: false, error: err2.message });
 
       db.all(
-        `SELECT * FROM events ORDER BY event_id DESC LIMIT 50`,
+        `SELECT * FROM events ORDER BY event_id DESC LIMIT 15`,
         (err3, events) => {
           if (err3)
             return res.status(500).json({ ok: false, error: err3.message });

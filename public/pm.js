@@ -1,4 +1,4 @@
-const params = new URLSearchParams(location.search);
+/* const params = new URLSearchParams(location.search);
 const pmId = params.get("pm") || "PM1";
 document.getElementById("pmId").textContent = pmId;
 
@@ -270,6 +270,349 @@ document.getElementById("manualBtn").onclick = async () => {
     clearBtn.click();
   } else {
     slotResult.textContent = `❌ ${j.error}. Correct: ${j.correct_slot}`;
+    slotResult.className = "notice error";
+  }
+};
+ */
+
+const params = new URLSearchParams(location.search);
+const pmId = params.get("pm") || "PM1";
+document.getElementById("pmId").textContent = pmId;
+
+const connStatus = document.getElementById("connStatus");
+
+let currentJobId = null;
+let currentTankId = null;
+let currentSlotId = null;
+
+let tankScanLock = false;
+
+// UI elements
+const jobIdEl = document.getElementById("jobId");
+const tankIdEl = document.getElementById("tankId");
+const slotIdEl = document.getElementById("slotId");
+const ackBtn = document.getElementById("ackBtn");
+const clearBtn = document.getElementById("clearBtn");
+const jobMsg = document.getElementById("jobMsg");
+
+const tankVideo = document.getElementById("tankVideo");
+const tankResult = document.getElementById("tankScanResult");
+
+const slotVideo = document.getElementById("slotVideo");
+const slotResult = document.getElementById("slotScanResult");
+
+// ---- QR Patterns
+const TANK_PATTERN = /^TANK\d{3}$/i;
+const SLOT_PATTERN = /^[ABCD]-[1-3]-[1-4]-[1-2]$/i;
+
+// Camera constraints (phone-friendly)
+const cameraConstraints = {
+  preferredCamera: "environment", // back camera
+};
+
+// --- WebSocket connect
+const wsUrl = `ws://${location.host}?pm=${pmId}`;
+const ws = new WebSocket(wsUrl);
+
+ws.onopen = () => {
+  connStatus.textContent = "WS Connected";
+  connStatus.className = "pill ok";
+};
+
+ws.onclose = () => {
+  connStatus.textContent = "WS Offline";
+  connStatus.className = "pill warn";
+};
+
+ws.onmessage = (evt) => {
+  const data = JSON.parse(evt.data);
+  if (data.type === "JOB") {
+    currentJobId = data.job_id;
+    currentTankId = data.tank_id;
+    currentSlotId = data.slot_id;
+
+    jobIdEl.textContent = currentJobId;
+    tankIdEl.textContent = currentTankId;
+    slotIdEl.textContent = currentSlotId;
+
+    ackBtn.disabled = false;
+    jobMsg.textContent =
+      "✅ Job received. Press ACK, then scan Slot QR to confirm placement.";
+    jobMsg.className = "notice success";
+
+    // Start slot scanner only when a job exists
+    startSlotScanner();
+  }
+};
+
+// ACK
+ackBtn.onclick = () => {
+  if (!currentJobId) return;
+  ws.send(JSON.stringify({ type: "ACK", job_id: currentJobId }));
+  ackBtn.disabled = true;
+  jobMsg.textContent = "✅ ACK sent. Proceed to scan Slot QR.";
+  jobMsg.className = "notice success";
+};
+
+// Clear demo
+clearBtn.onclick = () => {
+  currentJobId = null;
+  currentTankId = null;
+  currentSlotId = null;
+
+  jobIdEl.textContent = "-";
+  tankIdEl.textContent = "-";
+  slotIdEl.textContent = "-";
+
+  ackBtn.disabled = true;
+  jobMsg.textContent = "Cleared. Scan a Tank QR to start.";
+  jobMsg.className = "notice";
+
+  slotResult.textContent = "No active job.";
+  slotResult.className = "notice";
+
+  stopSlotScanner();
+  tankScanLock = false;
+  restartTankScanner();
+};
+
+// -------------------- Tank scanner --------------------
+let tankScanner = null;
+
+function formatTankScanError(j, tankId) {
+  // Handles new backend responses like:
+  // { ok:false, error:"Tank already assigned...", assigned_pm:"PM1", assigned_slot:"A-1-1-1" }
+  // { ok:false, error:"Tank already completed...", placed_slot:"B-1-2-1" }
+  if (!j) return `❌ Error scanning ${tankId}.`;
+
+  // Duplicate tank in progress
+  if (j.assigned_pm && j.assigned_slot) {
+    return `❌ ${j.error} | Assigned to ${j.assigned_pm} at ${j.assigned_slot}`;
+  }
+
+  // Already completed previously
+  if (j.placed_slot) {
+    return `❌ ${j.error} | Previously placed at ${j.placed_slot}`;
+  }
+
+  // Generic
+  return `❌ ${j.error || "Scan failed"}`;
+}
+
+function startTankScanner() {
+  if (tankScanner) return;
+
+  tankScanner = new QrScanner(
+    tankVideo,
+    async (result) => {
+      const tankId = (result.data || "").trim();
+
+      if (!TANK_PATTERN.test(tankId)) {
+        tankResult.textContent = `⚠️ Not a Tank QR: ${tankId} (expected TANK001 format)`;
+        tankResult.className = "notice";
+        return;
+      }
+
+      // ✅ prevent repeated scans
+      if (tankScanLock) return;
+      tankScanLock = true;
+
+      tankResult.textContent = `✅ Tank QR: ${tankId} — sending...`;
+      tankResult.className = "notice success";
+
+      // stop tank scanner to avoid duplicates while network call happens
+      try {
+        await tankScanner.stop();
+      } catch (e) {}
+      tankVideo.srcObject = null;
+
+      try {
+        const r = await fetch("/api/tank/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tank_id: tankId, pm_id: pmId }),
+        });
+
+        const j = await r.json();
+
+        if (!j.ok) {
+          // ✅ show detailed reason if tank already assigned/completed
+          tankResult.textContent = formatTankScanError(j, tankId);
+          tankResult.className = "notice error";
+
+          // unlock + restart scan
+          tankScanLock = false;
+          restartTankScanner();
+          return;
+        }
+
+        tankResult.textContent = `✅ Sent ${tankId}. Waiting for job assignment...`;
+        tankResult.className = "notice success";
+
+        // keep locked until job completes
+      } catch (err) {
+        tankResult.textContent = `❌ Network error. Try again.`;
+        tankResult.className = "notice error";
+        tankScanLock = false;
+        restartTankScanner();
+      }
+    },
+    { returnDetailedScanResult: true, ...cameraConstraints }
+  );
+
+  tankScanner.start().catch(() => {
+    tankResult.textContent =
+      "❌ Camera error. Allow camera permission (phone: use Chrome; sometimes HTTPS required).";
+    tankResult.className = "notice error";
+  });
+}
+
+async function restartTankScanner() {
+  if (tankScanner) {
+    try {
+      await tankScanner.stop();
+    } catch (e) {}
+    tankScanner = null;
+  }
+  startTankScanner();
+}
+
+startTankScanner();
+
+// -------------------- Slot scanner --------------------
+let slotScanner = null;
+
+function formatSlotConfirmError(j) {
+  if (!j) return "❌ Placement failed.";
+
+  // wrong slot case
+  if (j.error === "Wrong slot" && j.correct_slot) {
+    return `❌ Wrong slot. Correct slot: ${j.correct_slot}`;
+  }
+
+  // slot already occupied / other errors
+  if (j.error) return `❌ ${j.error}`;
+
+  return "❌ Placement failed.";
+}
+
+function startSlotScanner() {
+  if (slotScanner) return;
+
+  slotScanner = new QrScanner(
+    slotVideo,
+    async (result) => {
+      const scannedSlot = (result.data || "").trim();
+
+      if (!currentJobId) {
+        slotResult.textContent = `❌ No active job. Scan Tank QR first.`;
+        slotResult.className = "notice error";
+        return;
+      }
+
+      if (!SLOT_PATTERN.test(scannedSlot)) {
+        slotResult.textContent = `⚠️ Not a Slot QR: ${scannedSlot} (expected C-1-1-1 format)`;
+        slotResult.className = "notice";
+        return;
+      }
+
+      slotResult.textContent = `Validating ${scannedSlot}...`;
+      slotResult.className = "notice";
+
+      try {
+        const r = await fetch("/api/job/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            job_id: currentJobId,
+            scanned_slot: scannedSlot,
+          }),
+        });
+
+        const j = await r.json();
+
+        if (j.ok) {
+          slotResult.textContent = `✅ Confirmed at ${scannedSlot}. Job completed.`;
+          slotResult.className = "notice success";
+
+          // Reset job & restart tank scan
+          currentJobId = null;
+          currentTankId = null;
+          currentSlotId = null;
+
+          jobIdEl.textContent = "-";
+          tankIdEl.textContent = "-";
+          slotIdEl.textContent = "-";
+
+          ackBtn.disabled = true;
+          tankScanLock = false;
+
+          stopSlotScanner();
+          restartTankScanner();
+          return;
+        }
+
+        // ✅ handle any error shape safely
+        slotResult.textContent = formatSlotConfirmError(j);
+        slotResult.className = "notice error";
+      } catch (err) {
+        slotResult.textContent = "❌ Network error during confirmation.";
+        slotResult.className = "notice error";
+      }
+    },
+    { returnDetailedScanResult: true, ...cameraConstraints }
+  );
+
+  slotScanner.start().catch(() => {
+    slotResult.textContent =
+      "❌ Camera error for slot scan. Allow camera permission. If phone blocks on HTTP, use manual fallback.";
+    slotResult.className = "notice error";
+  });
+}
+
+async function stopSlotScanner() {
+  if (!slotScanner) return;
+  try {
+    await slotScanner.stop();
+  } catch (e) {}
+  slotScanner = null;
+  slotVideo.srcObject = null;
+}
+
+// -------------------- Manual slot confirm fallback --------------------
+document.getElementById("manualBtn").onclick = async () => {
+  const scannedSlot = document.getElementById("manualSlot").value.trim();
+
+  if (!currentJobId) {
+    slotResult.textContent = "❌ No active job.";
+    slotResult.className = "notice error";
+    return;
+  }
+  if (!SLOT_PATTERN.test(scannedSlot)) {
+    slotResult.textContent = "⚠️ Invalid slot format (use C-1-1-1).";
+    slotResult.className = "notice";
+    return;
+  }
+
+  try {
+    const r = await fetch("/api/job/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: currentJobId, scanned_slot: scannedSlot }),
+    });
+
+    const j = await r.json();
+
+    if (j.ok) {
+      slotResult.textContent = `✅ Confirmed at ${scannedSlot}. Job completed.`;
+      slotResult.className = "notice success";
+      clearBtn.click();
+    } else {
+      slotResult.textContent = formatSlotConfirmError(j);
+      slotResult.className = "notice error";
+    }
+  } catch (err) {
+    slotResult.textContent = "❌ Network error during manual confirmation.";
     slotResult.className = "notice error";
   }
 };
