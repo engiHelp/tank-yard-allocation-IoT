@@ -30,24 +30,84 @@ async function refresh() {
     const div = document.createElement("div");
     div.className = slotClass(s.status);
     div.textContent = s.slot_id;
+
+    // Click-to-release (only if ASSIGNED or OCCUPIED)
+    div.style.cursor = s.status === "FREE" ? "default" : "pointer";
+    div.title =
+      `Slot ${s.slot_id} | Status: ${s.status}` +
+      (s.status === "FREE" ? "" : " | Click to release");
+
+    div.onclick = async () => {
+      if (s.status === "FREE") return;
+
+      const ok = confirm(`Release slot ${s.slot_id}? (${s.status} -> FREE)`);
+      if (!ok) return;
+
+      const r = await fetch("/api/slot/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slot_id: s.slot_id }),
+      });
+      const out = await r.json();
+      if (!out.ok) alert(out.error || "Failed to release slot");
+
+      refresh();
+    };
+
     gridEl.appendChild(div);
   }
 
   // Jobs list
-  jobsEl.innerHTML = j.jobs
-    .map(
-      (job) => `
+  const activeJobs = j.jobs.filter((x) => x.status !== "COMPLETED");
+  const completedJobs = j.jobs.filter((x) => x.status === "COMPLETED");
+
+  jobsEl.innerHTML = `
+  <div style="margin-bottom:8px;">
+    <b>Active Jobs</b> <span class="small">(${activeJobs.length})</span>
+  </div>
+
+  ${
+    activeJobs.length
+      ? activeJobs
+          .map(
+            (job) => `
     <div class="card">
       <div><b>Job ${job.job_id}</b> | ${job.status}</div>
       <div>Tank: ${job.tank_id} | PM: ${job.pm_id}</div>
       <div>Slot: ${job.assigned_slot}</div>
     </div>
   `
-    )
-    .join("");
+          )
+          .join("")
+      : `<div class="small">No active jobs</div>`
+  }
+
+  <div style="margin-top:14px;margin-bottom:8px;">
+    <b>Completed (latest)</b> <span class="small">(${
+      completedJobs.length
+    })</span>
+  </div>
+
+  ${
+    completedJobs.length
+      ? completedJobs
+          .map(
+            (job) => `
+    <div class="card" style="opacity:0.75;">
+      <div><b>Job ${job.job_id}</b> | ${job.status}</div>
+      <div>Tank: ${job.tank_id} | PM: ${job.pm_id}</div>
+      <div>Slot: ${job.assigned_slot}</div>
+    </div>
+  `
+          )
+          .join("")
+      : `<div class="small">No completed jobs</div>`
+  }
+`;
 
   // Events
-  eventsEl.innerHTML = j.events
+  const recentEvents = j.events.slice(0, 15); // newest first already
+  eventsEl.innerHTML = recentEvents
     .map(
       (e) => `
     <div class="small">[${new Date(e.ts).toLocaleTimeString()}] <b>${

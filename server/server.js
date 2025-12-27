@@ -220,6 +220,46 @@ app.post("/api/job/confirm", (req, res) => {
   });
 });
 
+// ---------- Release slot (make it available again) ----------
+// Allows releasing ASSIGNED or OCCUPIED slots (prototype-friendly)
+app.post("/api/slot/release", (req, res) => {
+  const { slot_id } = req.body;
+  if (!slot_id) {
+    return res.status(400).json({ ok: false, error: "slot_id required" });
+  }
+
+  db.get(`SELECT status FROM slots WHERE slot_id=?`, [slot_id], (err, row) => {
+    if (err) return res.status(500).json({ ok: false, error: err.message });
+    if (!row)
+      return res.status(404).json({ ok: false, error: "Slot not found" });
+
+    // If already FREE, just respond OK (no changes needed)
+    if (row.status === "FREE") {
+      logEvent(
+        "SLOT_RELEASED",
+        `Slot ${slot_id} release requested but already FREE`
+      );
+      return res.json({ ok: true, message: "Slot already FREE" });
+    }
+
+    // Release any non-free slot (ASSIGNED or OCCUPIED)
+    db.run(
+      `UPDATE slots SET status='FREE' WHERE slot_id=?`,
+      [slot_id],
+      (err2) => {
+        if (err2)
+          return res.status(500).json({ ok: false, error: err2.message });
+
+        logEvent(
+          "SLOT_RELEASED",
+          `Slot ${slot_id} released (${row.status} -> FREE)`
+        );
+        res.json({ ok: true, message: `Slot ${slot_id} is now FREE` });
+      }
+    );
+  });
+});
+
 // ---------- Supervisor data ----------
 app.get("/api/supervisor/state", (req, res) => {
   db.all(`SELECT * FROM jobs ORDER BY job_id DESC LIMIT 50`, (err, jobs) => {
